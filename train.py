@@ -31,16 +31,16 @@ def get_transforms(train = False):
     std = [0.229, 0.224, 0.225]
     
     if train:
-        transform = transforms.Compose([transforms.Resize(255),
-                                      transforms.CenterCrop(crop),
-                                      transforms.ToTensor(),
-                                      transforms.Normalize(mean, std)])
-    else:
         transform = transforms.Compose([transforms.RandomRotation(30),
                                        transforms.RandomResizedCrop(crop),
                                        transforms.RandomHorizontalFlip(),
                                        transforms.ToTensor(),
                                        transforms.Normalize(mean, std)])
+    else:
+        transform = transforms.Compose([transforms.Resize(255),
+                                      transforms.CenterCrop(crop),
+                                      transforms.ToTensor(),
+                                      transforms.Normalize(mean, std)])
     return transform
 
 #loaders for data set
@@ -64,9 +64,12 @@ def create_loaders(data_path):
 #pretrained model
 def get_model(model_name, hidden_units):
     model_dic = {
-        "vgg13" : models.vgg13,
         "vgg16" : models.vgg16,
         "densenet121" : models.densenet121
+    }
+    input_dic = {
+        "vgg16" : 25088,
+        "densenet121" : 1024
     }
     
     if not model_name:
@@ -79,8 +82,9 @@ def get_model(model_name, hidden_units):
     model = model_fce(pretrained = True)
     for param in model.parameters():
         param.requires_grad = False
+    
     classifier = nn.Sequential(OrderedDict([
-                          ('fc1', nn.Linear(25088, hidden_units)),
+                          ('fc1', nn.Linear(input_dic.get(model_name, None), hidden_units)),
                           ('relu', nn.ReLU()),
                           ('dropout1', nn.Dropout(p=0.5)),
                           ('fc2', nn.Linear(hidden_units, 102)),
@@ -190,7 +194,7 @@ def main():
     model = get_model(args.arch, args.hidden_units)
     criterion = nn.NLLLoss()
     optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)    
-    device = torch.device("cuda:0" if args.gpu else "cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() and args.gpu else 'cpu')
     model.to(device)
     
     trained_model = train(args.epochs, train_loader, device, optimizer, model, criterion, valid_loader)

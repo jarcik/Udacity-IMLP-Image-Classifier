@@ -11,7 +11,7 @@ def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type = str)
     parser.add_argument("checkpoint", type = str)
-    parser.add_argument("--top_k", type = int, default = 1)
+    parser.add_argument("--top_k", type = int, default = 3)
     parser.add_argument("--category_names", type = str, default = "cat_to_name.json")
     parser.add_argument("--gpu", type = bool, default=False)
     return parser.parse_args()
@@ -71,7 +71,7 @@ def show_probs(probs, labels):
 def main():
     args = arg_parse()
     model = load_checkpoint(args.checkpoint)
-    device = torch.device("cuda:0" if args.gpu else "cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() and args.gpu else 'cpu')
     probs, labels = predict(args.input, model, args.category_names, args.top_k, device)
     show_probs(probs, labels)
     
